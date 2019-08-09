@@ -3,15 +3,11 @@ package jp.fhaze
 import java.util.UUID
 
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
-import org.apache.spark.sql.functions.{lit, when}
-import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
+import org.apache.spark.sql.functions.when
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object Main extends App {
-  if (System.getProperty("os.name").startsWith("Windows")) {
-    System.setProperty("hadoop.home.dir", "C:\\winutils")
-  }
-
   val uuid = UUID.randomUUID().toString
 
   val inputFile  = s"hdfs/data/example.txt"
@@ -31,15 +27,14 @@ object Main extends App {
     .option("delimiter", "|")
     .csv(inputFile)
 
+  val validatedValues = Helper.validate(example)
+  val onlyGoodValues  = validatedValues.filter($"all_validated" === true)
+  val onlyBadValues   = validatedValues.filter($"all_validated" === false)
 
-  val parsedValues = Helper.parse(example)
-  val validatedValues = Helper.validate(parsedValues)
+  Helper.saveDataFrameToFileSystem(onlyGoodValues.drop("all_validated", "sex_validated", "id_validated"), outputFile)
+  Helper.saveDataFrameToFileSystem(onlyBadValues.drop("all_validated", "sex_validated", "id_validated"), errorFile)
 
-  val onlyGoodValues  = validatedValues.filter($"status_geral" === "O")
-  val onlyBadValues   = validatedValues.filter($"status_geral" === "X")
-
-  Helper.saveDataFrameToFileSystem(onlyGoodValues, outputFile)
-  Helper.saveDataFrameToFileSystem(onlyBadValues, errorFile)
+  validatedValues.show()
 
   object Helper extends Serializable {
 
@@ -56,17 +51,19 @@ object Main extends App {
     }
 
     def validate(df: DataFrame) = {
-      df.withColumn("erro_sex",
-        when(valiateSex($"sex"), lit("O"))
-          .otherwise(lit("X")))
-        .withColumn("erro_id",
-          when($"id" > "3", lit("O"))
-        .otherwise(lit("X")))
-        .withColumn("status_geral", when($"erro_sex" === "O" and $"erro_id" === "O", lit("O")).otherwise(lit("X")))
-    }
-
-    def valiateSex(column: Column): Column = {
-      column === "J"
+      df
+        .withColumn("sex_validated",
+          when($"sex" === "F" or $"sex" === "M", true)
+            .otherwise(false)
+            .cast("boolean"))
+        .withColumn("id_validated",
+          when($"id" > 3, true)
+            .otherwise(false)
+            .cast("boolean"))
+        .withColumn("all_validated",
+          when($"sex_validated" === true and $"id_validated" === true, true)
+            .otherwise(false)
+            .cast("boolean"))
     }
 
     private def createHeaderDf(df: DataFrame) = {
@@ -75,8 +72,5 @@ object Main extends App {
       ss.createDataFrame(List(Row.fromSeq(header.toSeq)).asJava, df.schema)
     }
 
-    def parse(df: DataFrame): Dataset[Row] = {
-      df.select(df.columns.map(c => df.col(c).cast("string")): _*)
-    }
   }
 }
