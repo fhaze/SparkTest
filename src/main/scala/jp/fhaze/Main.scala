@@ -4,7 +4,7 @@ import java.util.UUID
 
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.functions.{lit, when}
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object Main extends App {
@@ -31,9 +31,12 @@ object Main extends App {
     .option("delimiter", "|")
     .csv(inputFile)
 
-  val validatedValues = Helper.validate(example)
-  val onlyGoodValues  = validatedValues.filter($"status" === "O").drop($"status")
-  val onlyBadValues   = validatedValues.filter($"status" === "X").drop($"status")
+
+  val parsedValues = Helper.parse(example)
+  val validatedValues = Helper.validate(parsedValues)
+
+  val onlyGoodValues  = validatedValues.filter($"status_geral" === "O")
+  val onlyBadValues   = validatedValues.filter($"status_geral" === "X")
 
   Helper.saveDataFrameToFileSystem(onlyGoodValues, outputFile)
   Helper.saveDataFrameToFileSystem(onlyBadValues, errorFile)
@@ -53,9 +56,17 @@ object Main extends App {
     }
 
     def validate(df: DataFrame) = {
-      parse(df).withColumn("status",
-        when($"sex" === "F" or $"sex" === "M", lit("O"))
+      df.withColumn("erro_sex",
+        when(valiateSex($"sex"), lit("O"))
           .otherwise(lit("X")))
+        .withColumn("erro_id",
+          when($"id" > "3", lit("O"))
+        .otherwise(lit("X")))
+        .withColumn("status_geral", when($"erro_sex" === "O" and $"erro_id" === "O", lit("O")).otherwise(lit("X")))
+    }
+
+    def valiateSex(column: Column): Column = {
+      column === "J"
     }
 
     private def createHeaderDf(df: DataFrame) = {
@@ -64,7 +75,7 @@ object Main extends App {
       ss.createDataFrame(List(Row.fromSeq(header.toSeq)).asJava, df.schema)
     }
 
-    private def parse(df: DataFrame): Dataset[Row] = {
+    def parse(df: DataFrame): Dataset[Row] = {
       df.select(df.columns.map(c => df.col(c).cast("string")): _*)
     }
   }
