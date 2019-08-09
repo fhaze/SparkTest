@@ -47,7 +47,7 @@ object Main extends App {
       val src = new Path(tempFile)
       val dst = new Path(destination)
 
-      FileUtil.copyMerge(fs, src, fs, dst,true, sc.hadoopConfiguration,null)
+      FileUtil.copyMerge(fs, src, fs, dst, true, sc.hadoopConfiguration, null)
     }
 
     def validate(df: DataFrame) = {
