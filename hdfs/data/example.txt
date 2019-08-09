@@ -1,0 +1,8 @@
+id|name|sex
+1|Mario|M
+2|Luigi|M
+3|Peach|F
+4|Koopa|M
+5|Kamek|J
+6|Chomp|M
+7|Gomba|M
