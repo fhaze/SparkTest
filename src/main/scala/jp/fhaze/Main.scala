@@ -34,15 +34,15 @@ object Main extends App {
   val validatedValues = Helper.validate(example)
 
   // Put all "_validated" columns into an array
-  val validationFields = Helper.getValidatonColumns(validatedValues)
+  val validationColumns = Helper.getValidatonColumns(validatedValues)
 
   // Filter "Good" and "Bad" values using "_validated" columns
-  val onlyGoodValues = validatedValues.filter(validationFields.map(col(_) === true).reduce(_ and _))
-  val onlyBadValues  = validatedValues.filter(validationFields.map(col(_) === false).reduce(_ or _))
+  val onlyGoodValues = validatedValues.filter(validationColumns.map(col(_) === true).reduce(_ and _))
+  val onlyBadValues  = validatedValues.filter(validationColumns.map(col(_) === false).reduce(_ or _))
 
   // Drop all "_validated" columns and save dataset into fs
-  Helper.saveDataFrameToFileSystem(onlyGoodValues.drop(validationFields: _*), outputFile)
-  Helper.saveDataFrameToFileSystem(onlyBadValues.drop(validationFields: _*), errorFile)
+  Helper.saveDataFrameToFileSystem(onlyGoodValues.drop(validationColumns: _*), outputFile)
+  Helper.saveDataFrameToFileSystem(onlyBadValues.drop(validationColumns: _*), errorFile)
 
   // Preview results
   validatedValues.show()
