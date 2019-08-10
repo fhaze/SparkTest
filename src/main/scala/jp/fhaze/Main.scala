@@ -18,11 +18,10 @@ object Main extends App {
   val outputFile = s"hdfs/data/out/output.txt"
   val errorFile  = s"hdfs/data/out/error.txt"
 
-  // Spark context
+  // Spark
   val sparkConf = new SparkConf().setMaster("local[4]").setAppName("SparkTest")
   val ss = SparkSession.builder().config(sparkConf).getOrCreate()
-  val sc = SparkContext.getOrCreate(sparkConf)
-  val fs = FileSystem.get(sc.hadoopConfiguration)
+  val fs = FileSystem.get(ss.sparkContext.hadoopConfiguration)
 
   // Load example txt into a dataFrame
   val example = ss.read
@@ -60,7 +59,7 @@ object Main extends App {
 
       if (fs.exists(dst))
         fs.delete(dst, true)
-      FileUtil.copyMerge(fs, src, fs, dst, true, sc.hadoopConfiguration, null)
+      FileUtil.copyMerge(fs, src, fs, dst, true, ss.sparkContext.hadoopConfiguration, null)
     }
 
     def getValidatonColumns(df: DataFrame) = {
