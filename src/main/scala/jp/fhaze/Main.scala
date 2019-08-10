@@ -12,7 +12,7 @@ object Main extends App {
   // Create a uuid for creating temporary files
   val uuid = UUID.randomUUID().toString
 
-  // Define directories
+  // Setting directories
   val inputFile  = s"hdfs/data/example.txt"
   val tempFile   = s"hdfs/data/out/example_${uuid}.txt"
   val outputFile = s"hdfs/data/out/output.txt"
