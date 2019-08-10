@@ -2,8 +2,8 @@ package jp.fhaze
 
 import java.util.UUID
 
+import jp.fhaze.validator.{DummyValidator, ValidatorFactory}
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
-import org.apache.spark.sql.functions.when
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -28,11 +28,11 @@ object Main extends App {
     .csv(inputFile)
 
   val validatedValues = Helper.validate(example)
-  val onlyGoodValues  = validatedValues.filter($"all_validated" === true)
-  val onlyBadValues   = validatedValues.filter($"all_validated" === false)
+  val onlyGoodValues  = validatedValues.filter($"sex_validated" === true and $"id_validated" === true)
+  val onlyBadValues   = validatedValues.filter($"sex_validated" === false and $"id_validated" === false)
 
-  Helper.saveDataFrameToFileSystem(onlyGoodValues.drop("all_validated", "sex_validated", "id_validated"), outputFile)
-  Helper.saveDataFrameToFileSystem(onlyBadValues.drop("all_validated", "sex_validated", "id_validated"), errorFile)
+  Helper.saveDataFrameToFileSystem(onlyGoodValues.drop("sex_validated", "id_validated"), outputFile)
+  Helper.saveDataFrameToFileSystem(onlyBadValues.drop("sex_validated", "id_validated"), errorFile)
 
   validatedValues.show()
 
@@ -51,26 +51,23 @@ object Main extends App {
     }
 
     def validate(df: DataFrame) = {
-      df
-        .withColumn("sex_validated",
-          when($"sex" === "F" or $"sex" === "M", true)
-            .otherwise(false)
-            .cast("boolean"))
-        .withColumn("id_validated",
-          when($"id" > 3, true)
-            .otherwise(false)
-            .cast("boolean"))
-        .withColumn("all_validated",
-          when($"sex_validated" === true and $"id_validated" === true, true)
-            .otherwise(false)
-            .cast("boolean"))
+      val header     = getHeader(df)
+      val validators = header.map(ValidatorFactory.create)
+
+      var stage = df
+      validators.foreach(validator => {
+        stage = validator.validate(ss, stage)
+      })
+
+      stage
     }
 
     private def createHeaderDf(df: DataFrame) = {
-      val header = df.schema.fields.map(_.name)
+      val header = getHeader(df)
       import scala.collection.JavaConverters._
       ss.createDataFrame(List(Row.fromSeq(header.toSeq)).asJava, df.schema)
     }
 
+    private def getHeader(df: DataFrame) = df.schema.fields.map(_.name)
   }
 }
