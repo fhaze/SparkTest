@@ -19,8 +19,8 @@ object Main extends App {
   val errorFile  = s"hdfs/data/out/error.txt"
 
   // Spark
-  val sparkConf = new SparkConf().setMaster("local[4]").setAppName("SparkTest")
-  val ss = SparkSession.builder().config(sparkConf).getOrCreate()
+  val sc = new SparkConf().setMaster("local[4]").setAppName("SparkTest")
+  val ss = SparkSession.builder().config(sc).getOrCreate()
   val fs = FileSystem.get(ss.sparkContext.hadoopConfiguration)
 
   // Load example txt into a dataFrame
