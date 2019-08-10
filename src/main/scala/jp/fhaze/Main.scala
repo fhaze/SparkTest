@@ -40,7 +40,7 @@ object Main extends App {
   val onlyGoodValues = validatedValues.filter(validationFields.map(col(_) === true).reduce(_ and _))
   val onlyBadValues  = validatedValues.filter(validationFields.map(col(_) === false).reduce(_ or _))
 
-  // Save Dataset into fs
+  // Delete all "_validated" columns and save Dataset into fs
   Helper.saveDataFrameToFileSystem(onlyGoodValues.drop(validationFields: _*), outputFile)
   Helper.saveDataFrameToFileSystem(onlyBadValues.drop(validationFields: _*), errorFile)
 
