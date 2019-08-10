@@ -30,17 +30,17 @@ object Main extends App {
     .option("delimiter", "|")
     .csv(inputFile)
 
-  // Validate example TXT and create "_validated" columns with a bool containing "true" or "false"
+  // Validate example TXT by creating "_validated" columns with a bool containing "true" or "false"
   val validatedValues = Helper.validate(example)
 
-  // Put all "_validated" columns in an array
+  // Put all "_validated" columns into an array
   val validationFields = Helper.getValidatonFields(validatedValues)
 
   // Filter "Good" and "Bad" values using "_validated" columns
   val onlyGoodValues = validatedValues.filter(validationFields.map(col(_) === true).reduce(_ and _))
   val onlyBadValues  = validatedValues.filter(validationFields.map(col(_) === false).reduce(_ or _))
 
-  // Save Dataset into fs
+  // Delete all "_validated" columns and save Dataset into fs
   Helper.saveDataFrameToFileSystem(onlyGoodValues.drop(validationFields: _*), outputFile)
   Helper.saveDataFrameToFileSystem(onlyBadValues.drop(validationFields: _*), errorFile)
 
