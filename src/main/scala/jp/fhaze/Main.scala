@@ -34,7 +34,7 @@ object Main extends App {
   val validatedValues = Helper.validate(example)
 
   // Put all "_validated" columns into an array
-  val validationFields = Helper.getValidatonFields(validatedValues)
+  val validationFields = Helper.getValidatonColumns(validatedValues)
 
   // Filter "Good" and "Bad" values using "_validated" columns
   val onlyGoodValues = validatedValues.filter(validationFields.map(col(_) === true).reduce(_ and _))
@@ -50,7 +50,7 @@ object Main extends App {
   object Helper extends Serializable {
 
     def saveDataFrameToFileSystem(df: DataFrame, destination: String) = {
-      createHeaderDf(df).union(df).write
+      createHeaderDataFrame(df).union(df).write
         .option("header", "false")
         .option("delimiter", "|")
         .csv(tempFile)
@@ -63,7 +63,7 @@ object Main extends App {
       FileUtil.copyMerge(fs, src, fs, dst, true, sc.hadoopConfiguration, null)
     }
 
-    def getValidatonFields(df: DataFrame) = {
+    def getValidatonColumns(df: DataFrame) = {
       df.columns.filter(_.endsWith("_validated"))
     }
 
@@ -79,7 +79,7 @@ object Main extends App {
       stage
     }
 
-    private def createHeaderDf(df: DataFrame) = {
+    private def createHeaderDataFrame(df: DataFrame) = {
       val header = getHeader(df)
       import scala.collection.JavaConverters._
       ss.createDataFrame(List(Row.fromSeq(header.toSeq)).asJava, df.schema)
