@@ -9,7 +9,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.functions._
 
 object Main extends App {
-  // Create a uuid for creating temporary files
+  // Create an uuid for creating temporary files
   val uuid = UUID.randomUUID().toString
 
   // Setting directories
