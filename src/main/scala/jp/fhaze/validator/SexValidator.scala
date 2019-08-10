@@ -6,10 +6,9 @@ import org.apache.spark.sql.functions.when
 object SexValidator extends Validator {
   override def validate(ss: SparkSession, df: DataFrame): DataFrame = {
     import ss.implicits._
-    df
-      .withColumn("id_validated",
-        when($"id" > 3, true)
-          .otherwise(false)
-          .cast("boolean"))
+    df.withColumn("sex_validated",
+      when($"sex" === "F" or $"sex" === "M", true)
+        .otherwise(false)
+        .cast("boolean"))
   }
 }
