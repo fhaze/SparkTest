@@ -18,19 +18,19 @@ object Main extends App {
   val outputFile = s"hdfs/data/out/output.txt"
   val errorFile  = s"hdfs/data/out/error.txt"
 
-  // Starts Spark Context
+  // Spark context
   val sparkConf = new SparkConf().setMaster("local[4]").setAppName("SparkTest")
   val ss = SparkSession.builder().config(sparkConf).getOrCreate()
   val sc = SparkContext.getOrCreate(sparkConf)
   val fs = FileSystem.get(sc.hadoopConfiguration)
 
-  // Load example TXT into a DataFrame
+  // Load example txt into a dataFrame
   val example = ss.read
     .option("header", "true")
     .option("delimiter", "|")
     .csv(inputFile)
 
-  // Validate example TXT by creating "_validated" columns with a bool containing "true" or "false"
+  // Validate example txt by creating "_validated" columns with a bool containing "true" or "false"
   val validatedValues = Helper.validate(example)
 
   // Put all "_validated" columns into an array
@@ -40,7 +40,7 @@ object Main extends App {
   val onlyGoodValues = validatedValues.filter(validationFields.map(col(_) === true).reduce(_ and _))
   val onlyBadValues  = validatedValues.filter(validationFields.map(col(_) === false).reduce(_ or _))
 
-  // Delete all "_validated" columns and save Dataset into fs
+  // Drop all "_validated" columns and save dataset into fs
   Helper.saveDataFrameToFileSystem(onlyGoodValues.drop(validationFields: _*), outputFile)
   Helper.saveDataFrameToFileSystem(onlyBadValues.drop(validationFields: _*), errorFile)
 
